@@ -1,0 +1,30 @@
+# --- OS Stuff ---
+.DS_Store
+Thumbs.db
+Desktop.ini
+ehthumbs.db
+
+# --- Windows/System ---
+*.tmp
+*.bak
+*.log
+
+# --- General IDE ---
+.vscode/
+.idea/
+.vs/
+
+# --- Language/Build  ---
+*.o
+*.obj
+*.exe
+*.dll
+*.so
+*.a
+*.pyc
+__pycache__/
+node_modules/
+
+# --- Personal/Hidden ---
+.env
+.secret
