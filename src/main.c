@@ -1,39 +1,52 @@
 #include <stdio.h>
 #include <windows.h>
 
+void print_header(const char* title) {
+    printf("\n[+] %s\n", title);
+    printf("------------------------------------------\n");
+}
+
 int main(int argc, char *argv[]) {
     if (argc < 2) {
-        printf("Usage: %s <path_to_pe_file>\n", argv[0]);
+        printf("Usage: MAT.exe <pe_file>\n");
         return 1;
     }
 
     HANDLE hFile = CreateFileA(argv[1], GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
     if (hFile == INVALID_HANDLE_VALUE) {
-        printf("[-] Gagal buka file. Error code: %d\n", GetLastError());
+        printf("[-] Gagal membuka file: %s\n", argv[1]);
         return 1;
     }
 
     HANDLE hMap = CreateFileMappingA(hFile, NULL, PAGE_READONLY, 0, 0, NULL);
-    LPVOID lpBaseAddress = MapViewOfFile(hMap, FILE_MAP_READ, 0, 0, 0);
+    LPVOID lpBase = MapViewOfFile(hMap, FILE_MAP_READ, 0, 0, 0);
 
-    PIMAGE_DOS_HEADER dosHeader = (PIMAGE_DOS_HEADER)lpBaseAddress;
-    if (dosHeader->e_magic != IMAGE_DOS_SIGNATURE) {
-        printf("[-] Bukan file PE (Executable) yang valid!\n");
+    PIMAGE_DOS_HEADER dos = (PIMAGE_DOS_HEADER)lpBase;
+    if (dos->e_magic != IMAGE_DOS_SIGNATURE) {
+        printf("[-] Bukan format PE yang valid!\n");
         return 1;
     }
 
-    PIMAGE_NT_HEADERS ntHeaders = (PIMAGE_NT_HEADERS)((DWORD_PTR)lpBaseAddress + dosHeader->e_lfanew);
+    PIMAGE_NT_HEADERS nt = (PIMAGE_NT_HEADERS)((BYTE*)lpBase + dos->e_lfanew);
 
-    printf("[+] Analisis File: %s\n", argv[1]);
-    printf("[+] DOS Magic: 0x%X\n", dosHeader->e_magic);
-    printf("[+] Entry Point: 0x%X\n", ntHeaders->OptionalHeader.AddressOfEntryPoint);
-    printf("[+] Image Base: 0x%llX\n", (unsigned long long)ntHeaders->OptionalHeader.ImageBase);
-    printf("[+] Number of Sections: %d\n", ntHeaders->FileHeader.NumberOfSections);
+    printf("=== MAT v0.1: Static Analyzer ===\n");
+    printf("Target: %s\n", argv[1]);
+    
+    print_header("Basic Information");
+    printf("Machine: %s\n", (nt->FileHeader.Machine == 0x8664) ? "x64" : "x86");
+    printf("Entry Point: 0x%X\n", nt->OptionalHeader.AddressOfEntryPoint);
+    printf("Sections Count: %d\n", nt->FileHeader.NumberOfSections);
 
-    UnmapViewOfFile(lpBaseAddress);
+    print_header("Section Table");
+    PIMAGE_SECTION_HEADER sect = IMAGE_FIRST_SECTION(nt);
+    for (int i = 0; i < nt->FileHeader.NumberOfSections; i++) {
+        printf("Section: %-8.8s | RawSize: 0x%X | VAddr: 0x%X\n", 
+                sect[i].Name, sect[i].SizeOfRawData, sect[i].VirtualAddress);
+    }
+
+    UnmapViewOfFile(lpBase);
     CloseHandle(hMap);
     CloseHandle(hFile);
 
-    printf("[+] Selesai.\n");
     return 0;
 }
