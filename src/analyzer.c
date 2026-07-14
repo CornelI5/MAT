@@ -18,7 +18,6 @@ uint32_t rva_to_offset(uint32_t rva, SECTION_HEADER* sections, int num_sections)
     return 0;
 }
 
-// Fungsi buat nyetak daftar DLL yang di-import
 void print_import_table(void* lpBase, uint32_t rva, uint32_t size, SECTION_HEADER* sections, int num_sections) {
     uint32_t offset = rva_to_offset(rva, sections, num_sections);
     if (!offset) return;
